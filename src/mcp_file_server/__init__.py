@@ -10,4 +10,4 @@ __author__ = "MCP Learning Journey"
 from .config import Config
 from .server import MCPFileServer
 
-__all__ = ['Config', 'MCPFileServer', '__version__']
+__all__ = ["Config", "MCPFileServer", "__version__"]

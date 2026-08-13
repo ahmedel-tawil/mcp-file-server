@@ -3,40 +3,77 @@ name = "mcp-file-server-pro"
 version = "1.0.0"
 description = "Professional MCP server for file system operations"
 readme = "README.md"
-requires-python = ">=3.9"
-dependencies = [
-    "mcp>=0.9.0",
-    "PyPDF2>=3.0.0",
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Ahmed El-Tawil" }]
+keywords = ["mcp", "model-context-protocol", "llm", "filesystem", "ai-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
-    "mypy>=1.0.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-    "isort>=5.12.0",
+dependencies = [
+    # NOTE: pinned to the 1.x line on purpose. mcp 2.0 removed the
+    # @server.list_tools() / @server.call_tool() decorator API that this
+    # server is built on. Migrating to the 2.x MCPServer API is tracked
+    # as planned work, not a drop-in bump.
+    "mcp>=1.29.0,<2.0.0",
+    "pypdf>=6.0.0",
 ]
 
 [project.scripts]
-mcp-file-server = "src.server:main"
+mcp-file-server = "mcp_file_server.server:main"
+
+[project.urls]
+Homepage = "https://github.com/ahmedel-tawil/mcp-file-server"
+Repository = "https://github.com/ahmedel-tawil/mcp-file-server"
+Issues = "https://github.com/ahmedel-tawil/mcp-file-server/issues"
 
 [build-system]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.black]
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_file_server"]
+
+# ---------------------------------------------------------------------------
+# uv: development dependency groups (PEP 735). Installed by `uv sync`,
+# excluded from the published wheel.
+# ---------------------------------------------------------------------------
+[dependency-groups]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "mypy>=1.13.0",
+    "ruff>=0.8.0",
+]
+
+[tool.uv]
+default-groups = ["dev"]
+
+# ---------------------------------------------------------------------------
+# Tooling. ruff replaces black + flake8 + isort (one tool, ~100x faster).
+# ---------------------------------------------------------------------------
+[tool.ruff]
 line-length = 100
-target-version = ['py39']
+target-version = "py310"
+src = ["src"]
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PTH", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mcp_file_server"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

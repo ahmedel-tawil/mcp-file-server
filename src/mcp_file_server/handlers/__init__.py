@@ -1,9 +1,9 @@
 """Handlers package for file type processing."""
 
-from .text_handler import TextHandler
 from .pdf_handler import PDFHandler
+from .text_handler import TextHandler
 
 __all__ = [
-    'TextHandler',
-    'PDFHandler',
+    "PDFHandler",
+    "TextHandler",
 ]

@@ -5,36 +5,35 @@ Professional implementation of an MCP server for file system operations.
 """
 
 import asyncio
-from pathlib import Path
-from typing import List
+import sys
 
-from mcp.server import Server
-from mcp.types import Tool, TextContent
 import mcp.server.stdio
+from mcp.server import Server
+from mcp.types import TextContent
 
 # Import our modules
-from config import Config
-from utils import get_logger
-from tools import (
-    FileReaderTool,
-    FileWriterTool,
+from .config import Config
+from .tools import (
     FileCreatorTool,
     FileListerTool,
+    FileReaderTool,
     FileSearcherTool,
+    FileWriterTool,
 )
+from .utils import get_logger
 
 
 class MCPFileServer:
     """
     Main MCP File Server.
-    
+
     Coordinates all tools and handles MCP protocol communication.
     """
 
     def __init__(self, config: Config):
         """
         Initialize the MCP File Server.
-        
+
         Args:
             config: Server configuration
         """
@@ -49,15 +48,13 @@ class MCPFileServer:
         self._register_handlers()
 
         self.logger.info(
-            f"MCP File Server initialized",
-            base_dir=str(config.base_dir),
-            tool_count=len(self.tools)
+            "MCP File Server initialized", base_dir=str(config.base_dir), tool_count=len(self.tools)
         )
 
-    def _initialize_tools(self) -> List:
+    def _initialize_tools(self) -> list:
         """
         Initialize all available tools.
-        
+
         Returns:
             List of tool instances
         """
@@ -70,8 +67,7 @@ class MCPFileServer:
         ]
 
         self.logger.info(
-            f"Initialized {len(tools)} tools",
-            tools=[tool.get_name() for tool in tools]
+            f"Initialized {len(tools)} tools", tools=[tool.get_name() for tool in tools]
         )
 
         return tools
@@ -83,30 +79,28 @@ class MCPFileServer:
         async def list_tools():
             """
             Handle tools/list request.
-            
+
             Returns list of all available tools with their definitions.
             """
             self.logger.debug("Tools list requested")
 
             return [tool.get_definition() for tool in self.tools]
 
-
-
         @self.app.call_tool()
         async def call_tool(name: str, arguments: dict):
             """
             Handle tools/call request.
-            
+
             Routes the call to the appropriate tool.
-            
+
             Args:
                 name: Tool name to execute
                 arguments: Tool arguments
-            
+
             Returns:
                 Tool execution result
             """
-            self.logger.debug(f"Tool call requested", tool=name)
+            self.logger.debug("Tool call requested", tool=name)
 
             # Find the tool
             tool = self._find_tool(name)
@@ -114,10 +108,7 @@ class MCPFileServer:
             if tool is None:
                 error_msg = f"Unknown tool: {name}"
                 self.logger.error(error_msg)
-                return [TextContent(
-                    type="text",
-                    text=f"❌ Error: {error_msg}"
-                )]
+                return [TextContent(type="text", text=f"❌ Error: {error_msg}")]
 
             # Execute the tool
             # The tool's execute() method handles all error handling and logging
@@ -128,10 +119,10 @@ class MCPFileServer:
     def _find_tool(self, name: str):
         """
         Find a tool by name.
-        
+
         Args:
             name: Tool name
-        
+
         Returns:
             Tool instance or None if not found
         """
@@ -143,7 +134,7 @@ class MCPFileServer:
     async def run(self):
         """
         Run the MCP server.
-        
+
         Sets up stdio transport and starts the server loop.
         """
         self.logger.info("Starting MCP File Server...")
@@ -151,41 +142,36 @@ class MCPFileServer:
         async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
             self.logger.info("Server ready and listening")
 
-            await self.app.run(
-                read_stream,
-                write_stream,
-                self.app.create_initialization_options()
-            )
+            await self.app.run(read_stream, write_stream, self.app.create_initialization_options())
 
 
-async def main():
+async def async_main():
     """
-    Main entry point.
-    
+    Async entry point.
+
     Creates configuration, initializes server, and runs it.
     """
-    # Create configuration
-    # You can customize this or load from environment
-    config = Config(
-        base_dir=Path(__file__).resolve().parent.parent
-    )
+    # Configuration comes from the environment so the sandbox root is
+    # explicit and deployable (MCP_BASE_DIR, MCP_LOG_LEVEL, MCP_MAX_FILE_SIZE).
+    # Defaults to ~/Documents.
+    config = Config.from_env()
 
     # Create and run server
     server = MCPFileServer(config)
     await server.run()
 
 
-if __name__ == "__main__":
+def main():
     """
-    Entry point when run directly.
-    
-    Usage:
-        python server.py
+    Console-script entry point (``mcp-file-server``).
+
+    Synchronous wrapper so it can be referenced from [project.scripts].
     """
     try:
-        asyncio.run(main())
+        asyncio.run(async_main())
     except KeyboardInterrupt:
-        print("\n✋ Server stopped by user")
-    except Exception as e:
-        print(f"❌ Fatal error: {e}")
-        raise
+        print("\n✋ Server stopped by user", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
